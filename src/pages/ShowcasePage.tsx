@@ -21,18 +21,34 @@ export function ShowcasePage() {
   const selectedQuarter = Number(searchParams.get('quarter')) || null;
   const selectedSectionId = searchParams.get('section') || null;
   const selectedTagIds = searchParams.get('tags')?.split(',').filter(Boolean) ?? [];
+  const selectedOther = searchParams.get('other') === 'true';
 
   const [visibleCount, setVisibleCount] = useState(INITIAL_PAGE_SIZE);
 
   useEffect(() => {
     setVisibleCount(INITIAL_PAGE_SIZE);
-  }, [selectedGrade, selectedQuarter, selectedSectionId, selectedTagIds.join(',')]);
+  }, [selectedGrade, selectedQuarter, selectedSectionId, selectedTagIds.join(','), selectedOther]);
 
   function onGradeChange(grade: number | null) {
     setSearchParams(prev => {
       if (grade) prev.set('grade', String(grade)); else prev.delete('grade');
       prev.delete('quarter');
       prev.delete('section');
+      prev.delete('other');
+      return prev;
+    });
+  }
+
+  function onOtherChange(val: boolean) {
+    setSearchParams(prev => {
+      if (val) {
+        prev.set('other', 'true');
+        prev.delete('grade');
+        prev.delete('quarter');
+        prev.delete('section');
+      } else {
+        prev.delete('other');
+      }
       return prev;
     });
   }
@@ -63,15 +79,18 @@ export function ShowcasePage() {
 
   const filteredGroups = useMemo(() => {
     return groups
-      .filter(g => !selectedGrade || g.grade?.includes(selectedGrade))
+      .filter(g => {
+        if (selectedOther) return !g.grade || g.grade.length === 0;
+        return !selectedGrade || g.grade?.includes(selectedGrade);
+      })
       .filter(g => !selectedQuarter || g.quarter === selectedQuarter)
       .filter(g => !selectedSectionId || g.sectionId === selectedSectionId)
       .filter(g => selectedTagIds.length === 0 || selectedTagIds.some(id => g.tagIds.includes(id)));
-  }, [groups, selectedGrade, selectedQuarter, selectedSectionId, selectedTagIds]);
+  }, [groups, selectedGrade, selectedQuarter, selectedSectionId, selectedTagIds, selectedOther]);
 
   const visibleGroups = filteredGroups.slice(0, visibleCount);
   const hasMore = visibleCount < filteredGroups.length;
-  const isFiltered = !!(selectedGrade || selectedQuarter || selectedSectionId || selectedTagIds.length);
+  const isFiltered = !!(selectedGrade || selectedQuarter || selectedSectionId || selectedTagIds.length || selectedOther);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -94,10 +113,12 @@ export function ShowcasePage() {
         selectedQuarter={selectedQuarter}
         selectedSectionId={selectedSectionId}
         selectedTagIds={selectedTagIds}
+        selectedOther={selectedOther}
         onGradeChange={onGradeChange}
         onQuarterChange={onQuarterChange}
         onSectionChange={onSectionChange}
         onTagIdsChange={onTagIdsChange}
+        onOtherChange={onOtherChange}
       />
 
       <main className="max-w-7xl mx-auto px-4 py-6">

@@ -14,10 +14,16 @@ import type { Artifact } from '../types/artifact.types';
 
 const COL = 'artifacts';
 
+function stripUndefined<T extends object>(obj: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined)
+  ) as Partial<T>;
+}
+
 export const artifactService = {
   async create(data: Omit<Artifact, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     const ref = await addDoc(collection(db, COL), {
-      ...data,
+      ...stripUndefined(data),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -31,7 +37,7 @@ export const artifactService = {
   },
 
   async update(id: string, data: Partial<Omit<Artifact, 'id' | 'createdAt'>>): Promise<void> {
-    await updateDoc(doc(db, COL, id), { ...data, updatedAt: serverTimestamp() });
+    await updateDoc(doc(db, COL, id), { ...stripUndefined(data), updatedAt: serverTimestamp() });
   },
 
   async delete(id: string): Promise<void> {

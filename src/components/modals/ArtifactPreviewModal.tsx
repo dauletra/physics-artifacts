@@ -26,7 +26,7 @@ export function ArtifactPreviewModal({ isOpen, embedUrl, onClose }: ArtifactPrev
         <iframe
           src={getEmbedUrl(embedUrl)}
           className="flex-1 w-full rounded-b-xl"
-          allow="fullscreen"
+          allow="fullscreen; clipboard-write; clipboard-read"
         />
       </div>
     </div>

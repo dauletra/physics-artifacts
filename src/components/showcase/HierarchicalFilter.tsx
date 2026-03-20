@@ -9,10 +9,12 @@ interface HierarchicalFilterProps {
   selectedQuarter: number | null;
   selectedSectionId: string | null;
   selectedTagIds: string[];
+  selectedOther: boolean;
   onGradeChange(v: number | null): void;
   onQuarterChange(v: number | null): void;
   onSectionChange(v: string | null): void;
   onTagIdsChange(v: string[]): void;
+  onOtherChange(v: boolean): void;
 }
 
 function OptionBtn({ onClick, children }: { onClick(): void; children: React.ReactNode }) {
@@ -60,10 +62,12 @@ export function HierarchicalFilter({
   selectedQuarter,
   selectedSectionId,
   selectedTagIds,
+  selectedOther,
   onGradeChange,
   onQuarterChange,
   onSectionChange,
   onTagIdsChange,
+  onOtherChange,
 }: HierarchicalFilterProps) {
   const visibleSections = sections.filter(
     s => s.grade === selectedGrade && s.quarter === selectedQuarter
@@ -90,8 +94,13 @@ export function HierarchicalFilter({
       <div className="overflow-x-auto scrollbar-hide">
         <div className="flex items-center gap-2 min-w-max">
 
+          {/* "Басқа" selected — terminal state, no further drill-down */}
+          {selectedOther && (
+            <ActiveCrumb label="Басқа" onBack={() => onOtherChange(false)} />
+          )}
+
           {/* Level 0: pick grade */}
-          {level === 0 && (
+          {!selectedOther && level === 0 && (
             <>
               <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">Сынып:</span>
               {GRADES.map(g => (
@@ -99,11 +108,12 @@ export function HierarchicalFilter({
                   {g}
                 </OptionBtn>
               ))}
+              <OptionBtn onClick={() => onOtherChange(true)}>Басқа</OptionBtn>
             </>
           )}
 
           {/* Level 1: grade chosen, pick quarter */}
-          {level === 1 && (
+          {!selectedOther && level === 1 && (
             <>
               <ActiveCrumb
                 label={`${selectedGrade} сынып`}
@@ -119,7 +129,7 @@ export function HierarchicalFilter({
           )}
 
           {/* Level 2: quarter chosen, pick section */}
-          {level === 2 && (
+          {!selectedOther && level === 2 && (
             <>
               <ActiveCrumb
                 label={`${selectedGrade} сынып`}

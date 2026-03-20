@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Trash2, Pencil, Check, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSections } from '../../hooks/useSections';
 import { sectionService } from '../../services/sectionService';
+import { artifactGroupService } from '../../services/artifactGroupService';
 import { DeleteConfirmModal } from '../../components/modals/DeleteConfirmModal';
 import { Spinner } from '../../components/ui/Spinner';
 import { GRADES, QUARTERS } from '../../config/constants';
@@ -14,6 +15,16 @@ export function SectionsPage() {
   const [deleting, setDeleting] = useState(false);
   const [newForm, setNewForm] = useState({ grade: 7, quarter: 1, label: '', order: 0 });
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const max = sections
+      .filter(s => s.grade === newForm.grade && s.quarter === newForm.quarter)
+      .reduce((m, s) => Math.max(m, s.order), 0);
+    setNewForm(f => ({ ...f, order: max + 1 }));
+  }, [newForm.grade, newForm.quarter, sections]);
+  const [editingLabel, setEditingLabel] = useState('');
+  const [editingSaving, setEditingSaving] = useState(false);
 
   const grouped = GRADES.flatMap(grade =>
     QUARTERS.map(quarter => ({
@@ -30,7 +41,7 @@ export function SectionsPage() {
     try {
       await sectionService.create({ ...newForm, label: newForm.label.trim() });
       toast.success('Бөлім жасалды');
-      setNewForm({ grade: 7, quarter: 1, label: '', order: 0 });
+      setNewForm(f => ({ ...f, label: '' }));
       reload();
     } catch {
       toast.error('Жасау қатесі');
@@ -39,10 +50,36 @@ export function SectionsPage() {
     }
   }
 
+  function startEdit(s: Section) {
+    setEditingId(s.id);
+    setEditingLabel(s.label);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditingLabel('');
+  }
+
+  async function handleRename() {
+    if (!editingId || !editingLabel.trim()) return;
+    setEditingSaving(true);
+    try {
+      await sectionService.update(editingId, { label: editingLabel.trim() });
+      toast.success('Атауы өзгертілді');
+      cancelEdit();
+      reload();
+    } catch {
+      toast.error('Сақтау қатесі');
+    } finally {
+      setEditingSaving(false);
+    }
+  }
+
   async function handleDelete() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
+      await artifactGroupService.clearSectionId(deleteTarget.id);
       await sectionService.delete(deleteTarget.id);
       toast.success('Жойылды');
       setDeleteTarget(null);
@@ -116,14 +153,47 @@ export function SectionsPage() {
               <div className="divide-y divide-gray-100 dark:divide-gray-700">
                 {items.map(s => (
                   <div key={s.id} className="flex items-center gap-3 px-4 py-2.5">
-                    <span className="flex-1 text-sm text-gray-900 dark:text-gray-100">{s.label}</span>
-                    <span className="text-xs text-gray-400">реттілік: {s.order}</span>
-                    <button
-                      onClick={() => setDeleteTarget(s)}
-                      className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {editingId === s.id ? (
+                      <>
+                        <input
+                          autoFocus
+                          value={editingLabel}
+                          onChange={e => setEditingLabel(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') cancelEdit(); }}
+                          className="flex-1 px-2 py-1 border border-blue-400 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <button
+                          onClick={handleRename}
+                          disabled={editingSaving}
+                          className="p-1 text-green-500 hover:text-green-600 transition-colors disabled:opacity-50"
+                        >
+                          {editingSaving ? <Spinner className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={cancelEdit}
+                          className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <span className="flex-1 text-sm text-gray-900 dark:text-gray-100">{s.label}</span>
+                        <span className="text-xs text-gray-400">реттілік: {s.order}</span>
+                        <button
+                          onClick={() => startEdit(s)}
+                          className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(s)}
+                          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>

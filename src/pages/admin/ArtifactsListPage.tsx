@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useArtifactGroups } from '../../hooks/useArtifactGroups';
+import { useTags } from '../../hooks/useTags';
 import { artifactGroupService } from '../../services/artifactGroupService';
 import { DeleteConfirmModal } from '../../components/modals/DeleteConfirmModal';
 import { ErrorState } from '../../components/ui/ErrorState';
@@ -12,10 +13,13 @@ import type { ArtifactGroup } from '../../types/artifact.types';
 
 export function ArtifactsListPage() {
   const { groups, loading, error, reload } = useArtifactGroups();
+  const { tags } = useTags();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<ArtifactGroup | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const tagMap = useMemo(() => new Map(tags.map(t => [t.id, t.label])), [tags]);
 
   const filtered = useMemo(
     () => groups.filter(g => g.title.toLowerCase().includes(search.toLowerCase())),
@@ -81,8 +85,11 @@ export function ArtifactsListPage() {
               <thead className="bg-gray-50 dark:bg-gray-700/50">
                 <tr>
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">Атауы</th>
+                  <th className="text-center px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">Сынып</th>
+                  <th className="text-center px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">Тоқсан</th>
+                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">Тегтер</th>
                   <th className="text-center px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">Нұсқалар</th>
-                  <th className="text-center px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">Жариялы</th>
+                  <th className="text-center px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">Жарияланған</th>
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">Жасалған</th>
                   <th className="px-4 py-3" />
                 </tr>
@@ -92,6 +99,25 @@ export function ArtifactsListPage() {
                   <tr key={g.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
                     <td className="px-4 py-3 text-gray-900 dark:text-gray-100 font-medium max-w-xs truncate">
                       {g.title}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-600 dark:text-gray-400 text-xs">
+                      {g.grade?.length ? g.grade.join(', ') : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-600 dark:text-gray-400 text-xs">
+                      {g.quarter ?? '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      {g.tagIds?.length ? (
+                        <div className="flex flex-wrap gap-1">
+                          {g.tagIds.map(id => (
+                            <span key={id} className="px-1.5 py-0.5 bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 text-xs rounded">
+                              {tagMap.get(id) ?? id}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-600 dark:text-gray-400">
                       {g.variantCount}
@@ -111,7 +137,7 @@ export function ArtifactsListPage() {
                       </button>
                     </td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
-                      {g.createdAt?.toDate().toLocaleDateString('ru-RU')}
+                      {g.createdAt?.toDate().toLocaleString('ru-RU')}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2 justify-end">
@@ -133,7 +159,7 @@ export function ArtifactsListPage() {
                 ))}
                 {paged.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                    <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
                       Артефактілер жоқ
                     </td>
                   </tr>

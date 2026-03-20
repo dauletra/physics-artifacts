@@ -17,13 +17,13 @@ function GoogleIcon() {
 export function LoginPage() {
   const { signIn, signInWithGoogle, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-
-  if (!authLoading && isAdmin) return <Navigate to="/admin" replace />;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+
+  if (!authLoading && isAdmin) return <Navigate to="/admin" replace />;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();

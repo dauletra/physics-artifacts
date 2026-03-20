@@ -6,6 +6,7 @@ import {
   getDocs,
   updateDoc,
   deleteDoc,
+  deleteField,
   query,
   where,
   serverTimestamp,
@@ -18,10 +19,16 @@ import { normalizeArtifactGroup } from '../utils/artifactHelpers';
 
 const COL = 'artifact_groups';
 
+function stripUndefined<T extends object>(obj: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined)
+  ) as Partial<T>;
+}
+
 export const artifactGroupService = {
   async create(data: Omit<ArtifactGroup, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     const ref = await addDoc(collection(db, COL), {
-      ...data,
+      ...stripUndefined(data),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -46,7 +53,13 @@ export const artifactGroupService = {
   },
 
   async update(id: string, data: Partial<Omit<ArtifactGroup, 'id' | 'createdAt'>>): Promise<void> {
-    await updateDoc(doc(db, COL, id), { ...data, updatedAt: serverTimestamp() });
+    await updateDoc(doc(db, COL, id), { ...stripUndefined(data), updatedAt: serverTimestamp() });
+  },
+
+  async clearSectionId(sectionId: string): Promise<void> {
+    const q = query(collection(db, COL), where('sectionId', '==', sectionId));
+    const snap = await getDocs(q);
+    await Promise.all(snap.docs.map(d => updateDoc(d.ref, { sectionId: deleteField() })));
   },
 
   async delete(id: string): Promise<void> {
