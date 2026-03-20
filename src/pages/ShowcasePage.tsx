@@ -96,7 +96,10 @@ export function ShowcasePage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
-        <h1 className="font-bold text-gray-900 dark:text-gray-100 text-lg">Физика — Артефактілер</h1>
+        <div className="flex items-center gap-2">
+          <img src="/favicon.svg" alt="logo" className="w-8 h-8" />
+          <h1 className="font-bold text-gray-900 dark:text-gray-100 text-lg"> — Артефактілер</h1>
+        </div>
         <Link
           to={isAdmin ? '/admin' : '/login'}
           className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
@@ -168,6 +171,27 @@ export function ShowcasePage() {
           </>
         )}
       </main>
+      <footer className="mt-12 border-t border-gray-200 dark:border-gray-800 py-6 px-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-400 dark:text-gray-500">
+          <span>Тараз, 2026</span>
+          <div className="flex items-center gap-4">
+            <a
+              href="https://t.me/dauletra"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              Telegram: @dauletra
+            </a>
+            <a
+              href="mailto:daulet.rakhmankul@gmail.com"
+              className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              daulet.rakhmankul@gmail.com
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
