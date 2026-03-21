@@ -141,6 +141,9 @@ export function ArtifactEditForm({ initialGroupId, onSaveRedirect }: ArtifactEdi
 
       if (initialGroupId) {
         await artifactGroupService.update(initialGroupId, groupData);
+        if (thumbnail === undefined) {
+          await artifactGroupService.clearThumbnail(initialGroupId);
+        }
 
         // Get existing artifacts to diff
         const existing = await artifactService.getByGroupId(initialGroupId);

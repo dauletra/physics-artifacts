@@ -56,6 +56,14 @@ export const artifactGroupService = {
     await updateDoc(doc(db, COL, id), { ...stripUndefined(data), updatedAt: serverTimestamp() });
   },
 
+  async clearThumbnail(id: string): Promise<void> {
+    await updateDoc(doc(db, COL, id), {
+      thumbnail: deleteField(),
+      thumbnailPath: deleteField(),
+      updatedAt: serverTimestamp(),
+    });
+  },
+
   async clearSectionId(sectionId: string): Promise<void> {
     const q = query(collection(db, COL), where('sectionId', '==', sectionId));
     const snap = await getDocs(q);
