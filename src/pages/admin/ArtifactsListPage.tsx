@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, ExternalLink, Trash2, ChevronLeft, ChevronRight, Image } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useArtifactGroups } from '../../hooks/useArtifactGroups';
 import { useTags } from '../../hooks/useTags';
@@ -66,6 +66,11 @@ export function ArtifactsListPage() {
         </Link>
       </div>
 
+      <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+        <span>Барлығы: <span className="font-medium text-gray-900 dark:text-gray-100">{groups.length}</span></span>
+        <span>Жарияланған: <span className="font-medium text-green-600 dark:text-green-400">{groups.filter(g => g.isPublic).length}</span></span>
+      </div>
+
       <input
         type="text"
         value={search}
@@ -97,8 +102,19 @@ export function ArtifactsListPage() {
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {paged.map(g => (
                   <tr key={g.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100 font-medium max-w-xs truncate">
-                      {g.title}
+                    <td className="px-4 py-3 font-medium max-w-xs">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <Link
+                          to={`/admin/artifacts/${g.id}`}
+                          className="truncate text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        >
+                          {g.title}
+                        </Link>
+
+                        {g.thumbnail && (
+                            <Image className="w-3.5 h-3.5 shrink-0 text-blue-400" />
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-center text-gray-600 dark:text-gray-400 text-xs">
                       {g.grade?.length ? g.grade.join(', ') : '—'}
@@ -141,12 +157,14 @@ export function ArtifactsListPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2 justify-end">
-                        <Link
-                          to={`/admin/artifacts/${g.id}`}
-                          className="p-1.5 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        <a
+                          href={`/artifacts/${g.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 text-gray-500 hover:text-green-600 dark:hover:text-green-400 transition-colors"
                         >
-                          <Pencil className="w-4 h-4" />
-                        </Link>
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
                         <button
                           onClick={() => setDeleteTarget(g)}
                           className="p-1.5 text-gray-500 hover:text-red-500 transition-colors"

@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback } from 'react';
 import { Upload, X } from 'lucide-react';
 import { storageService } from '../../services/storageService';
+import { ImageCropModal } from './ImageCropModal';
 
 interface ImageUploaderProps {
   onUpload(url: string, storagePath: string): void;
@@ -8,41 +9,14 @@ interface ImageUploaderProps {
   onRemove?(): void;
 }
 
-async function resizeImage(file: File): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const MAX_W = 600;
-      const MAX_H = 400;
-      let { width, height } = img;
-      if (width > MAX_W || height > MAX_H) {
-        const ratio = Math.min(MAX_W / width, MAX_H / height);
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
-      canvas.toBlob(blob => {
-        if (blob) resolve(blob);
-        else reject(new Error('Canvas toBlob failed'));
-      }, 'image/jpeg', 0.85);
-    };
-    img.onerror = reject;
-    img.src = url;
-  });
-}
-
 export function ImageUploader({ onUpload, currentImageUrl, onRemove }: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = useCallback(async (file: File) => {
+  const handleFile = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) {
       alert('Тек суреттер рұқсат етілген');
       return;
@@ -51,10 +25,14 @@ export function ImageUploader({ onUpload, currentImageUrl, onRemove }: ImageUplo
       alert('Файл тым үлкен (максимум 10 МБ)');
       return;
     }
+    setCropFile(file);
+  }, []);
+
+  const handleCropConfirm = useCallback(async (blob: Blob) => {
+    setCropFile(null);
     setUploading(true);
     setProgress(0);
     try {
-      const blob = await resizeImage(file);
       const { url, path } = await storageService.upload(blob, setProgress);
       onUpload(url, path);
     } catch (e) {
@@ -96,44 +74,54 @@ export function ImageUploader({ onUpload, currentImageUrl, onRemove }: ImageUplo
   }
 
   return (
-    <div
-      className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
-        dragOver
-          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-          : 'border-gray-300 dark:border-gray-600 hover:border-blue-400'
-      }`}
-      onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-      onDragLeave={() => setDragOver(false)}
-      onDrop={onDrop}
-      onPaste={onPaste}
-      onClick={() => inputRef.current?.click()}
-    >
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
-      />
-      {uploading ? (
-        <div className="space-y-2">
-          <p className="text-sm text-gray-500">Жүктелуде... {progress}%</p>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-            <div
-              className="bg-blue-600 h-1.5 rounded-full transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-1">
-          <Upload className="w-8 h-8 text-gray-400 mx-auto" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Сүйреңіз, қойыңыз (Ctrl+V) немесе таңдау үшін басыңыз
-          </p>
-          <p className="text-xs text-gray-400">image/*, 10 МБ дейін</p>
-        </div>
+    <>
+      {cropFile && (
+        <ImageCropModal
+          file={cropFile}
+          onConfirm={handleCropConfirm}
+          onCancel={() => { setCropFile(null); if (inputRef.current) inputRef.current.value = ''; }}
+        />
       )}
-    </div>
+
+      <div
+        className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
+          dragOver
+            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+            : 'border-gray-300 dark:border-gray-600 hover:border-blue-400'
+        }`}
+        onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={onDrop}
+        onPaste={onPaste}
+        onClick={() => inputRef.current?.click()}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+        />
+        {uploading ? (
+          <div className="space-y-2">
+            <p className="text-sm text-gray-500">Жүктелуде... {progress}%</p>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+              <div
+                className="bg-blue-600 h-1.5 rounded-full transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <Upload className="w-8 h-8 text-gray-400 mx-auto" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Сүйреңіз, қойыңыз (Ctrl+V) немесе таңдау үшін басыңыз
+            </p>
+            <p className="text-xs text-gray-400">image/*, 10 МБ дейін</p>
+          </div>
+        )}
+      </div>
+    </>
   );
 }

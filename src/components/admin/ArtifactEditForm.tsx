@@ -5,12 +5,14 @@ import toast from 'react-hot-toast';
 import type { ArtifactGroup, Artifact } from '../../types/artifact.types';
 import { artifactGroupService } from '../../services/artifactGroupService';
 import { artifactService } from '../../services/artifactService';
+import { storageService } from '../../services/storageService';
 import { useSections } from '../../hooks/useSections';
 import { useTags } from '../../hooks/useTags';
 import { GRADES, QUARTERS } from '../../config/constants';
 import { normalizeArtifactUrl, isValidArtifactUrl } from '../../utils/artifactUrl';
 import { ImageUploader } from '../showcase/ImageUploader';
 import { ArtifactPreviewModal } from '../modals/ArtifactPreviewModal';
+import { ConfirmModal } from '../modals/ConfirmModal';
 import { Spinner } from '../ui/Spinner';
 
 interface VariantForm {
@@ -46,6 +48,7 @@ export function ArtifactEditForm({ initialGroupId, onSaveRedirect }: ArtifactEdi
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [thumbnail, setThumbnail] = useState<string | undefined>();
   const [thumbnailPath, setThumbnailPath] = useState<string | undefined>();
+  const [showRemoveCoverConfirm, setShowRemoveCoverConfirm] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
   const [usesAI, setUsesAI] = useState(false);
   const [variants, setVariants] = useState<VariantForm[]>([
@@ -304,8 +307,12 @@ export function ArtifactEditForm({ initialGroupId, onSaveRedirect }: ArtifactEdi
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Мұқаба</label>
         <ImageUploader
           currentImageUrl={thumbnail}
-          onUpload={(url, path) => { setThumbnail(url); setThumbnailPath(path); }}
-          onRemove={() => { setThumbnail(undefined); setThumbnailPath(undefined); }}
+          onUpload={(url, path) => {
+            if (thumbnailPath) storageService.delete(thumbnailPath).catch(() => {});
+            setThumbnail(url);
+            setThumbnailPath(path);
+          }}
+          onRemove={() => setShowRemoveCoverConfirm(true)}
         />
       </div>
 
@@ -426,6 +433,21 @@ export function ArtifactEditForm({ initialGroupId, onSaveRedirect }: ArtifactEdi
           onClose={() => setPreviewUrl(null)}
         />
       )}
+
+      <ConfirmModal
+        isOpen={showRemoveCoverConfirm}
+        title="Мұқабаны жою?"
+        description="Артефакттың мұқабасы жойылады."
+        confirmLabel="Жою"
+        variant="warning"
+        onConfirm={() => {
+          if (thumbnailPath) storageService.delete(thumbnailPath).catch(() => {});
+          setThumbnail(undefined);
+          setThumbnailPath(undefined);
+          setShowRemoveCoverConfirm(false);
+        }}
+        onCancel={() => setShowRemoveCoverConfirm(false)}
+      />
     </form>
   );
 }
