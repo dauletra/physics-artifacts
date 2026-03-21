@@ -9,7 +9,7 @@ import { storageService } from '../../services/storageService';
 import { useSections } from '../../hooks/useSections';
 import { useTags } from '../../hooks/useTags';
 import { GRADES, QUARTERS } from '../../config/constants';
-import { normalizeArtifactUrl, isValidArtifactUrl } from '../../utils/artifactUrl';
+import { normalizeArtifactUrl, isValidArtifactUrl, detectUrlType } from '../../utils/artifactUrl';
 import { ImageUploader } from '../showcase/ImageUploader';
 import { ArtifactPreviewModal } from '../modals/ArtifactPreviewModal';
 import { ConfirmModal } from '../modals/ConfirmModal';
@@ -21,6 +21,7 @@ interface VariantForm {
   embedUrl: string;
   description: string;
   order: number;
+  requiresAuth: boolean;
 }
 
 interface ArtifactEditFormProps {
@@ -37,7 +38,7 @@ export function ArtifactEditForm({ initialGroupId, onSaveRedirect }: ArtifactEdi
 
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(!!initialGroupId);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewVariant, setPreviewVariant] = useState<{ embedUrl: string; requiresAuth: boolean } | null>(null);
 
   // Form state
   const [title, setTitle] = useState('');
@@ -52,7 +53,7 @@ export function ArtifactEditForm({ initialGroupId, onSaveRedirect }: ArtifactEdi
   const [isPublic, setIsPublic] = useState(false);
   const [usesAI, setUsesAI] = useState(false);
   const [variants, setVariants] = useState<VariantForm[]>([
-    { variantLabel: '', embedUrl: '', description: '', order: 0 },
+    { variantLabel: '', embedUrl: '', description: '', order: 0, requiresAuth: false },
   ]);
 
   useEffect(() => {
@@ -74,8 +75,8 @@ export function ArtifactEditForm({ initialGroupId, onSaveRedirect }: ArtifactEdi
       setUsesAI(group.usesAI ?? false);
       setVariants(
         arts.length > 0
-          ? arts.map(a => ({ id: a.id, variantLabel: a.variantLabel, embedUrl: a.embedUrl, description: a.description ?? '', order: a.order }))
-          : [{ variantLabel: '', embedUrl: '', description: '', order: 0 }]
+          ? arts.map(a => ({ id: a.id, variantLabel: a.variantLabel, embedUrl: a.embedUrl, description: a.description ?? '', order: a.order, requiresAuth: a.requiresAuth ?? false }))
+          : [{ variantLabel: '', embedUrl: '', description: '', order: 0, requiresAuth: false }]
       );
     }).catch(() => toast.error('Жүктеу қатесі')).finally(() => setLoading(false));
   }, [initialGroupId, navigate, onSaveRedirect]);
@@ -98,14 +99,14 @@ export function ArtifactEditForm({ initialGroupId, onSaveRedirect }: ArtifactEdi
 
   function addVariant() {
     if (variants.length >= MAX_VARIANTS) return;
-    setVariants(prev => [...prev, { variantLabel: '', embedUrl: '', description: '', order: prev.length }]);
+    setVariants(prev => [...prev, { variantLabel: '', embedUrl: '', description: '', order: prev.length, requiresAuth: false }]);
   }
 
   function removeVariant(idx: number) {
     setVariants(prev => prev.filter((_, i) => i !== idx).map((v, i) => ({ ...v, order: i })));
   }
 
-  function updateVariant(idx: number, field: keyof VariantForm, value: string) {
+  function updateVariant(idx: number, field: keyof VariantForm, value: string | boolean) {
     setVariants(prev => prev.map((v, i) => i === idx ? { ...v, [field]: value } : v));
   }
 
@@ -160,6 +161,7 @@ export function ArtifactEditForm({ initialGroupId, onSaveRedirect }: ArtifactEdi
               embedUrl: v.embedUrl,
               description: v.description || undefined,
               order: v.order,
+              requiresAuth: v.requiresAuth || undefined,
             };
             if (v.id && existingIds.has(v.id)) {
               return artifactService.update(v.id, data);
@@ -177,6 +179,7 @@ export function ArtifactEditForm({ initialGroupId, onSaveRedirect }: ArtifactEdi
               embedUrl: v.embedUrl,
               description: v.description || undefined,
               order: v.order,
+              requiresAuth: v.requiresAuth || undefined,
             })
           )
         );
@@ -382,13 +385,18 @@ export function ArtifactEditForm({ initialGroupId, onSaveRedirect }: ArtifactEdi
                 type="text"
                 value={v.embedUrl}
                 onChange={e => updateVariant(idx, 'embedUrl', e.target.value)}
-                placeholder="UUID немесе Claude артефактінің URL-і"
+                placeholder="Claude UUID / URL немесе GitHub Pages URL-і"
                 className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               />
               {v.embedUrl && (
+                <span className="self-center text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                  {detectUrlType(v.embedUrl) === 'github-pages' ? '🌐 GitHub Pages' : '🤖 Claude'}
+                </span>
+              )}
+              {v.embedUrl && (
                 <button
                   type="button"
-                  onClick={() => setPreviewUrl(v.embedUrl)}
+                  onClick={() => setPreviewVariant({ embedUrl: v.embedUrl, requiresAuth: v.requiresAuth })}
                   className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   title="Алдын ала қарау"
                 >
@@ -396,6 +404,19 @@ export function ArtifactEditForm({ initialGroupId, onSaveRedirect }: ArtifactEdi
                 </button>
               )}
             </div>
+            {v.embedUrl && detectUrlType(v.embedUrl) === 'claude' && (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={v.requiresAuth}
+                  onChange={e => updateVariant(idx, 'requiresAuth', e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300"
+                />
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  Claude аккаунтты қажет етеді (iframe-да ашылмайды)
+                </span>
+              </label>
+            )}
             <input
               type="text"
               value={v.description}
@@ -426,11 +447,12 @@ export function ArtifactEditForm({ initialGroupId, onSaveRedirect }: ArtifactEdi
         </button>
       </div>
 
-      {previewUrl && (
+      {previewVariant && (
         <ArtifactPreviewModal
           isOpen={true}
-          embedUrl={previewUrl}
-          onClose={() => setPreviewUrl(null)}
+          embedUrl={previewVariant.embedUrl}
+          requiresAuth={previewVariant.requiresAuth}
+          onClose={() => setPreviewVariant(null)}
         />
       )}
 

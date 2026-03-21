@@ -133,26 +133,62 @@ export function ArtifactDetailPage() {
         </div>
       )}
 
-      {/* iframe */}
+      {/* Content */}
       <div className="relative flex-1 overflow-hidden" style={{ height: `calc(100vh - ${headerH + tabsH}px)` }}>
-        {iframeLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-950 z-10">
-            <Spinner />
+        {currentArtifact?.requiresAuth ? (
+          <div className="flex flex-col items-center justify-center h-full gap-6 p-8 text-center">
+            <div className="text-5xl">🤖</div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-200">
+                Бұл артефакт Claude аккаунтты қажет
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm max-w-sm">
+                Артефакт Claude AI мүмкіндіктерін пайдаланады. Жұмыс жасау үшін Claude аккаунтыңызбен кіріңіз.
+              </p>
+            </div>
+            <a
+              href={getViewUrl(currentArtifact.embedUrl)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium flex items-center gap-2 transition-colors"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Claude-та ашу
+            </a>
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              Аккаунт жоқ па?{' '}
+              <a
+                href="https://claude.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                Тегін тіркелу →
+              </a>
+            </p>
           </div>
-        )}
-        {currentArtifact ? (
-          <iframe
-            key={currentArtifact.id}
-            src={getEmbedUrl(currentArtifact.embedUrl)}
-            className="w-full h-full border-0"
-            allow="fullscreen"
-            onLoad={() => setIframeLoading(false)}
-            onError={() => setIframeLoading(false)}
-          />
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500">
-            Нұсқалар жоқ
-          </div>
+          <>
+            {iframeLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-950 z-10">
+                <Spinner />
+              </div>
+            )}
+            {currentArtifact ? (
+              <iframe
+                key={currentArtifact.id}
+                src={getEmbedUrl(currentArtifact.embedUrl)}
+                className="w-full h-full border-0"
+                allow="fullscreen; microphone; camera; autoplay; clipboard-read; clipboard-write"
+                onLoad={() => setIframeLoading(false)}
+                onError={() => setIframeLoading(false)}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500">
+                Нұсқалар жоқ
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

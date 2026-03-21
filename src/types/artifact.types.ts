@@ -25,6 +25,7 @@ export interface Artifact {
   embedUrl: string;
   description?: string;
   order: number;
+  requiresAuth?: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
