@@ -37,3 +37,5 @@ Thumbs.db
 firebase-debug.log
 firestore-debug.log
 storage.rules.bak
+
+public/sitemap.xml
