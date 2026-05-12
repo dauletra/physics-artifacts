@@ -8,6 +8,8 @@ import { artifactService } from '../../services/artifactService';
 import { storageService } from '../../services/storageService';
 import { useSections } from '../../hooks/useSections';
 import { useTags } from '../../hooks/useTags';
+import { useAuth } from '../../context/AuthContext';
+import { adminService } from '../../services/adminService';
 import { GRADES, QUARTERS } from '../../config/constants';
 import { normalizeArtifactUrl, isValidArtifactUrl, detectUrlType } from '../../utils/artifactUrl';
 import { ImageUploader } from '../showcase/ImageUploader';
@@ -33,6 +35,7 @@ const MAX_VARIANTS = 5;
 
 export function ArtifactEditForm({ initialGroupId, onSaveRedirect }: ArtifactEditFormProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { sections } = useSections();
   const { tags } = useTags();
 
@@ -173,7 +176,23 @@ export function ArtifactEditForm({ initialGroupId, onSaveRedirect }: ArtifactEdi
           })
         );
       } else {
-        const groupId = await artifactGroupService.create(groupData);
+        const creatorEmail = user?.email ?? undefined;
+        let creatorName: string | undefined;
+        if (creatorEmail) {
+          try {
+            const me = await adminService.getByEmail(creatorEmail);
+            creatorName = me?.publicName?.trim()
+              || user?.displayName?.trim()
+              || creatorEmail.split('@')[0];
+          } catch {
+            creatorName = user?.displayName?.trim() || creatorEmail.split('@')[0];
+          }
+        }
+        const groupId = await artifactGroupService.create({
+          ...groupData,
+          createdBy: creatorEmail,
+          createdByName: creatorName,
+        });
         await Promise.all(
           normalizedVariants.map(v =>
             artifactService.create({

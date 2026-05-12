@@ -22,12 +22,13 @@ export function ShowcasePage() {
   const selectedSectionId = searchParams.get('section') || null;
   const selectedTagIds = searchParams.get('tags')?.split(',').filter(Boolean) ?? [];
   const selectedOther = searchParams.get('other') === 'true';
+  const selectedAuthor = searchParams.get('author') || null;
 
   const [visibleCount, setVisibleCount] = useState(INITIAL_PAGE_SIZE);
 
   useEffect(() => {
     setVisibleCount(INITIAL_PAGE_SIZE);
-  }, [selectedGrade, selectedQuarter, selectedSectionId, selectedTagIds.join(','), selectedOther]);
+  }, [selectedGrade, selectedQuarter, selectedSectionId, selectedTagIds.join(','), selectedOther, selectedAuthor]);
 
   function onGradeChange(grade: number | null) {
     setSearchParams(prev => {
@@ -85,12 +86,26 @@ export function ShowcasePage() {
       })
       .filter(g => !selectedQuarter || g.quarter === selectedQuarter)
       .filter(g => !selectedSectionId || g.sectionId === selectedSectionId)
-      .filter(g => selectedTagIds.length === 0 || selectedTagIds.some(id => g.tagIds.includes(id)));
-  }, [groups, selectedGrade, selectedQuarter, selectedSectionId, selectedTagIds, selectedOther]);
+      .filter(g => selectedTagIds.length === 0 || selectedTagIds.some(id => g.tagIds.includes(id)))
+      .filter(g => !selectedAuthor || g.createdBy === selectedAuthor);
+  }, [groups, selectedGrade, selectedQuarter, selectedSectionId, selectedTagIds, selectedOther, selectedAuthor]);
 
   const visibleGroups = filteredGroups.slice(0, visibleCount);
   const hasMore = visibleCount < filteredGroups.length;
-  const isFiltered = !!(selectedGrade || selectedQuarter || selectedSectionId || selectedTagIds.length || selectedOther);
+  const isFiltered = !!(selectedGrade || selectedQuarter || selectedSectionId || selectedTagIds.length || selectedOther || selectedAuthor);
+
+  const authorDisplayName = useMemo(() => {
+    if (!selectedAuthor) return null;
+    const match = groups.find(g => g.createdBy === selectedAuthor && g.createdByName);
+    return match?.createdByName || selectedAuthor.split('@')[0];
+  }, [groups, selectedAuthor]);
+
+  function clearAuthor() {
+    setSearchParams(prev => {
+      prev.delete('author');
+      return prev;
+    });
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -100,12 +115,6 @@ export function ShowcasePage() {
           <img src="/favicon.svg" alt="logo" className="w-8 h-8" />
           <h1 className="font-bold text-gray-900 dark:text-gray-100 text-lg"> — Артефактілер</h1>
         </div>
-        <Link
-          to={isAdmin ? '/admin' : '/login'}
-          className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-        >
-          {isAdmin ? 'Әкімші панелі' : 'Кіру'}
-        </Link>
       </header>
 
       {/* Filter */}
@@ -125,6 +134,24 @@ export function ShowcasePage() {
       />
 
       <main className="max-w-7xl mx-auto px-4 py-6">
+        {/* Author chip */}
+        {selectedAuthor && (
+          <div className="mb-3 flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 pl-3 pr-1 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm rounded-full border border-blue-200 dark:border-blue-800">
+              Автор: <span className="font-medium">{authorDisplayName}</span>
+              <button
+                onClick={clearAuthor}
+                title="Сүзгіні алып тастау"
+                className="ml-1 p-0.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </span>
+          </div>
+        )}
+
         {/* Results count */}
         {isFiltered && !loading && (
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
@@ -172,9 +199,9 @@ export function ShowcasePage() {
         )}
       </main>
       <footer className="mt-12 border-t border-gray-200 dark:border-gray-800 py-6 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-400 dark:text-gray-500">
-          <span>Тараз, 2026</span>
-          <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto flex flex-col items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
+          {/* Links row */}
+          <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2">
             <a
               href="https://t.me/dauletra"
               target="_blank"
@@ -189,7 +216,23 @@ export function ShowcasePage() {
             >
               daulet.rakhmankul@gmail.com
             </a>
+            <a
+              href="#"
+              title="Жақында қолжетімді болады"
+              className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-not-allowed opacity-60"
+              onClick={e => e.preventDefault()}
+            >
+              Артефакт қалай жасалады? →
+            </a>
+            <Link
+              to={isAdmin ? '/admin' : '/login'}
+              className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              {isAdmin ? 'Әкімші панелі' : 'Кіру'}
+            </Link>
           </div>
+          {/* Copyright */}
+          <span>Тараз, 2026</span>
         </div>
       </footer>
     </div>

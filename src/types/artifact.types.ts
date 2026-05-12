@@ -14,6 +14,8 @@ export interface ArtifactGroup {
   quarter?: number;
   sectionId?: string;
   tagIds: string[];
+  createdBy?: string;
+  createdByName?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -42,4 +44,12 @@ export interface Tag {
   id: string;
   label: string;
   order: number;
+}
+
+export interface Admin {
+  email: string;
+  isSuper?: boolean;
+  publicName?: string;
+  addedBy?: string;
+  addedAt?: Timestamp;
 }

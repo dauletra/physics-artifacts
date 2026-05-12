@@ -10,6 +10,7 @@ import { ArtifactsListPage } from './pages/admin/ArtifactsListPage';
 import { ArtifactEditPage } from './pages/admin/ArtifactEditPage';
 import { SectionsPage } from './pages/admin/SectionsPage';
 import { TagsPage } from './pages/admin/TagsPage';
+import { AdminsPage } from './pages/admin/AdminsPage';
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
             <Route path="/admin/artifacts/:id" element={<ArtifactEditPage />} />
             <Route path="/admin/sections" element={<SectionsPage />} />
             <Route path="/admin/tags" element={<TagsPage />} />
+            <Route path="/admin/admins" element={<AdminsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

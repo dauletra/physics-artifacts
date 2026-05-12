@@ -46,7 +46,8 @@ export function ArtifactDetailPage() {
   }
 
   function goBack() {
-    navigate(-1);
+    if (window.history.length > 1) navigate(-1);
+    else navigate('/');
   }
 
   if (groupLoading || artifactsLoading) {
@@ -76,9 +77,30 @@ export function ArtifactDetailPage() {
           <span className="text-sm hidden sm:inline">Артқа</span>
         </button>
 
-        <h1 className="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100 truncate mx-2">
-          {group.title}
-        </h1>
+        <div className="flex-1 min-w-0 mx-2">
+          <h1 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate leading-tight">
+            {group.title}
+          </h1>
+          {(group.createdByName || group.createdBy) && (
+            <div className="text-xs text-gray-500 dark:text-gray-400 truncate leading-tight">
+              {group.createdBy ? (
+                <Link
+                  to={`/?author=${encodeURIComponent(group.createdBy)}`}
+                  className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  title={group.createdBy}
+                >
+                  {group.createdByName || group.createdBy.split('@')[0]}
+                </Link>
+              ) : (
+                <span>{group.createdByName}</span>
+              )}
+              <span className="mx-1.5 text-gray-300 dark:text-gray-600">·</span>
+              <span>
+                {group.createdAt.toDate().toLocaleDateString('kk-KZ', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </span>
+            </div>
+          )}
+        </div>
 
         <div className="flex items-center gap-2 shrink-0">
           {isAdmin && (

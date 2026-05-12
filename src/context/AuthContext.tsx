@@ -13,6 +13,7 @@ import { auth, db } from '../config/firebase';
 interface AuthContextValue {
   user: User | null;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   loading: boolean;
   signIn(email: string, password: string): Promise<void>;
   signInWithGoogle(): Promise<void>;
@@ -21,24 +22,28 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-async function checkIsAdmin(email: string): Promise<boolean> {
+async function loadAdminStatus(email: string): Promise<{ isAdmin: boolean; isSuper: boolean }> {
   const snap = await getDoc(doc(db, 'admins', email));
-  return snap.exists();
+  if (!snap.exists()) return { isAdmin: false, isSuper: false };
+  return { isAdmin: true, isSuper: snap.data().isSuper === true };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser?.email) {
-        const adminStatus = await checkIsAdmin(firebaseUser.email);
-        setIsAdmin(adminStatus);
+        const status = await loadAdminStatus(firebaseUser.email);
+        setIsAdmin(status.isAdmin);
+        setIsSuperAdmin(status.isSuper);
       } else {
         setIsAdmin(false);
+        setIsSuperAdmin(false);
       }
       setLoading(false);
     });
@@ -48,8 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signIn(email: string, password: string) {
     const cred = await signInWithEmailAndPassword(auth, email, password);
     if (cred.user.email) {
-      const adminStatus = await checkIsAdmin(cred.user.email);
-      if (!adminStatus) {
+      const status = await loadAdminStatus(cred.user.email);
+      if (!status.isAdmin) {
         await firebaseSignOut(auth);
         throw new Error('Нет доступа: не является администратором');
       }
@@ -60,8 +65,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const provider = new GoogleAuthProvider();
     const cred = await signInWithPopup(auth, provider);
     if (cred.user.email) {
-      const adminStatus = await checkIsAdmin(cred.user.email);
-      if (!adminStatus) {
+      const status = await loadAdminStatus(cred.user.email);
+      if (!status.isAdmin) {
         await firebaseSignOut(auth);
         throw new Error(`Нет доступа: ${cred.user.email} не в списке администраторов`);
       }
@@ -71,10 +76,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     await firebaseSignOut(auth);
     setIsAdmin(false);
+    setIsSuperAdmin(false);
   }
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, loading, signIn, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, isAdmin, isSuperAdmin, loading, signIn, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );

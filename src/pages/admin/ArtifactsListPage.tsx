@@ -8,23 +8,32 @@ import { artifactGroupService } from '../../services/artifactGroupService';
 import { DeleteConfirmModal } from '../../components/modals/DeleteConfirmModal';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { Spinner } from '../../components/ui/Spinner';
-import { ADMIN_PAGE_SIZE } from '../../config/constants';
+import { ADMIN_PAGE_SIZE, GRADES, QUARTERS } from '../../config/constants';
 import type { ArtifactGroup } from '../../types/artifact.types';
 
 export function ArtifactsListPage() {
   const { groups, loading, error, reload } = useArtifactGroups();
   const { tags } = useTags();
   const [search, setSearch] = useState('');
+  const [filterGrade, setFilterGrade] = useState('');
+  const [filterQuarter, setFilterQuarter] = useState('');
+  const [filterPublished, setFilterPublished] = useState('');
   const [page, setPage] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<ArtifactGroup | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const tagMap = useMemo(() => new Map(tags.map(t => [t.id, t.label])), [tags]);
 
-  const filtered = useMemo(
-    () => groups.filter(g => g.title.toLowerCase().includes(search.toLowerCase())),
-    [groups, search]
-  );
+  const filtered = useMemo(() => groups.filter(g => {
+    if (search && !g.title.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterGrade === 'none' && g.grade?.length) return false;
+    if (filterGrade && filterGrade !== 'none' && !g.grade?.includes(Number(filterGrade))) return false;
+    if (filterQuarter === 'none' && g.quarter != null) return false;
+    if (filterQuarter && filterQuarter !== 'none' && g.quarter !== Number(filterQuarter)) return false;
+    if (filterPublished === 'true' && !g.isPublic) return false;
+    if (filterPublished === 'false' && g.isPublic) return false;
+    return true;
+  }), [groups, search, filterGrade, filterQuarter, filterPublished]);
 
   const totalPages = Math.ceil(filtered.length / ADMIN_PAGE_SIZE);
   const paged = filtered.slice(page * ADMIN_PAGE_SIZE, (page + 1) * ADMIN_PAGE_SIZE);
@@ -71,13 +80,42 @@ export function ArtifactsListPage() {
         <span>Жарияланған: <span className="font-medium text-green-600 dark:text-green-400">{groups.filter(g => g.isPublic).length}</span></span>
       </div>
 
-      <input
-        type="text"
-        value={search}
-        onChange={e => { setSearch(e.target.value); setPage(0); }}
-        placeholder="Атауы бойынша іздеу..."
-        className="w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-      />
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="text"
+          value={search}
+          onChange={e => { setSearch(e.target.value); setPage(0); }}
+          placeholder="Атауы бойынша іздеу..."
+          className="w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+        />
+        <select
+          value={filterGrade}
+          onChange={e => { setFilterGrade(e.target.value); setPage(0); }}
+          className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm max-w-[160px]"
+        >
+          <option value="">Барлық сыныптар</option>
+          {GRADES.map(g => <option key={g} value={g}>{g} сынып</option>)}
+          <option value="none">Сыныпсыз</option>
+        </select>
+        <select
+          value={filterQuarter}
+          onChange={e => { setFilterQuarter(e.target.value); setPage(0); }}
+          className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm max-w-[160px]"
+        >
+          <option value="">Барлық тоқсандар</option>
+          {QUARTERS.map(q => <option key={q} value={q}>{q} тоқсан</option>)}
+          <option value="none">Тоқсансыз</option>
+        </select>
+        <select
+          value={filterPublished}
+          onChange={e => { setFilterPublished(e.target.value); setPage(0); }}
+          className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm max-w-[160px]"
+        >
+          <option value="">Барлығы</option>
+          <option value="true">Жарияланған</option>
+          <option value="false">Жарияланбаған</option>
+        </select>
+      </div>
 
       {error && <ErrorState message="Ошибка загрузки" onRetry={reload} />}
 

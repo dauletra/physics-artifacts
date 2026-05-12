@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { Copy, Sparkles } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Copy, Sparkles, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { ArtifactGroup } from '../../types/artifact.types';
 import { getViewUrl } from '../../utils/artifactUrl';
@@ -19,13 +19,22 @@ interface ArtifactCardProps {
 }
 
 export function ArtifactCard({ group, showNewBadge }: ArtifactCardProps) {
+  const navigate = useNavigate();
   const gradient = GRADIENTS[group.id.charCodeAt(0) % GRADIENTS.length];
+  const authorName = group.createdByName || (group.createdBy ? group.createdBy.split('@')[0] : null);
 
   function copyLink(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
     navigator.clipboard.writeText(`${window.location.origin}/artifacts/${group.id}`);
     toast.success('Сілтеме көшірілді');
+  }
+
+  function filterByAuthor(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!group.createdBy) return;
+    navigate(`/?author=${encodeURIComponent(group.createdBy)}`);
   }
 
   return (
@@ -86,12 +95,24 @@ export function ArtifactCard({ group, showNewBadge }: ArtifactCardProps) {
           </div>
         )}
 
-        {/* Variants */}
-        {group.variantCount > 1 && group.variantLabels.length > 0 && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-auto">
-            {group.variantLabels.join(' · ')}
-          </p>
-        )}
+        {/* Meta footer */}
+        <div className="mt-auto flex flex-col gap-1">
+          {authorName && (
+            <button
+              onClick={filterByAuthor}
+              title={group.createdBy ? `Автордың барлық артефактілері: ${group.createdBy}` : undefined}
+              className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left min-w-0"
+            >
+              <User className="w-3 h-3 shrink-0" />
+              <span className="truncate">{authorName}</span>
+            </button>
+          )}
+          {group.variantCount > 1 && group.variantLabels.length > 0 && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+              {group.variantLabels.join(' · ')}
+            </p>
+          )}
+        </div>
       </div>
     </Link>
   );
