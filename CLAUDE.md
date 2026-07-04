@@ -21,7 +21,7 @@ Environment: copy `.env.example` → `.env` and fill in Firebase credentials.
 **Backend:** Firebase (Firestore + Auth + Storage). No custom server — all data access goes through service functions in `src/services/`.
 
 ### Auth & Authorization
-- `src/context/AuthContext.tsx` — wraps the app; provides `user`, `isAdmin`, `isSuperAdmin`, `signIn`, `signInWithGoogle`, `signOut`
+- `src/context/AuthContext.tsx` — wraps the app; provides `user`, `isAdmin`, `isSuperAdmin`, `signInWithGoogle`, `signOut`. Only Google sign-in is supported — there is no email/password flow because admin accounts are created in Firestore (`admins` collection) and there is no provisioning step that creates a matching Firebase Auth password.
 - Admin status is checked at login: user email must exist in the Firestore `admins` collection (document ID = email, lowercased)
 - Two roles: regular admin (default) and super-admin (`isSuper: true` on the admin doc). Only super-admins can add/remove other admins or change their `publicName`.
 - Protected routes use `src/components/admin/AdminRoute.tsx`. Super-only pages additionally check `isSuperAdmin` and redirect otherwise.

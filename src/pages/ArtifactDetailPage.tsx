@@ -7,13 +7,13 @@ import { useArtifacts } from '../hooks/useArtifacts';
 import type { ArtifactGroup } from '../types/artifact.types';
 import { getEmbedUrl, getViewUrl } from '../utils/artifactUrl';
 import { Spinner } from '../components/ui/Spinner';
-import { ErrorState } from '../components/ui/ErrorState';
+import { NotFoundPage } from './NotFoundPage';
 import { useAuth } from '../context/AuthContext';
 
 export function ArtifactDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, loading: authLoading } = useAuth();
 
   const [group, setGroup] = useState<ArtifactGroup | null>(null);
   const [groupLoading, setGroupLoading] = useState(true);
@@ -50,7 +50,7 @@ export function ArtifactDetailPage() {
     else navigate('/');
   }
 
-  if (groupLoading || artifactsLoading) {
+  if (groupLoading || artifactsLoading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Spinner />
@@ -58,8 +58,8 @@ export function ArtifactDetailPage() {
     );
   }
 
-  if (groupError || !group) {
-    return <ErrorState message="Артефакт табылмады" onRetry={() => navigate('/')} />;
+  if (groupError || !group || (!group.isPublic && !isAdmin)) {
+    return <NotFoundPage />;
   }
 
   return (

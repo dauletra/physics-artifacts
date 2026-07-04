@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback } from 'react';
 import { Upload, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { storageService } from '../../services/storageService';
 import { ImageCropModal } from './ImageCropModal';
 
@@ -18,11 +19,11 @@ export function ImageUploader({ onUpload, currentImageUrl, onRemove }: ImageUplo
 
   const handleFile = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) {
-      alert('Тек суреттер рұқсат етілген');
+      toast.error('Тек суреттер рұқсат етілген');
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      alert('Файл тым үлкен (максимум 10 МБ)');
+      toast.error('Файл тым үлкен (максимум 10 МБ)');
       return;
     }
     setCropFile(file);
@@ -36,7 +37,7 @@ export function ImageUploader({ onUpload, currentImageUrl, onRemove }: ImageUplo
       const { url, path } = await storageService.upload(blob, setProgress);
       onUpload(url, path);
     } catch (e) {
-      alert('Жүктеу қатесі: ' + (e instanceof Error ? e.message : String(e)));
+      toast.error('Жүктеу қатесі: ' + (e instanceof Error ? e.message : String(e)));
     } finally {
       setUploading(false);
     }

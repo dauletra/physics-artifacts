@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Spinner } from '../components/ui/Spinner';
@@ -15,29 +15,12 @@ function GoogleIcon() {
 }
 
 export function LoginPage() {
-  const { signIn, signInWithGoogle, isAdmin, loading: authLoading } = useAuth();
+  const { signInWithGoogle, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
 
   if (!authLoading && isAdmin) return <Navigate to="/admin" replace />;
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      await signIn(email, password);
-      navigate('/admin');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Кіру қатесі');
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleGoogle() {
     setError('');
@@ -60,62 +43,20 @@ export function LoginPage() {
           <p className="text-sm text-gray-500 dark:text-gray-400">Тек әкімшілерге қол жетімді</p>
         </div>
 
-        {/* Google */}
         <button
           onClick={handleGoogle}
-          disabled={googleLoading || loading}
+          disabled={googleLoading}
           className="w-full py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-70 transition-colors flex items-center justify-center gap-3 text-sm font-medium text-gray-700 dark:text-gray-300"
         >
           {googleLoading ? <Spinner className="w-4 h-4" /> : <GoogleIcon />}
           Google арқылы кіру
         </button>
 
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-          <span className="text-xs text-gray-400">немесе</span>
-          <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-        </div>
-
-        {/* Email/password */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Электрондық пошта</label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Құпия сөз</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {error && (
-            <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg">
-              {error}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading || googleLoading}
-            className="w-full py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-70 transition-colors flex items-center justify-center gap-2 font-medium"
-          >
-            {loading && <Spinner className="w-4 h-4" />}
-            Кіру
-          </button>
-        </form>
+        {error && (
+          <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg">
+            {error}
+          </p>
+        )}
 
         <div className="text-center">
           <Link to="/" className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">

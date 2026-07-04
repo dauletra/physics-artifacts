@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import {
   type User,
-  signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
   signOut as firebaseSignOut,
@@ -15,7 +14,6 @@ interface AuthContextValue {
   isAdmin: boolean;
   isSuperAdmin: boolean;
   loading: boolean;
-  signIn(email: string, password: string): Promise<void>;
   signInWithGoogle(): Promise<void>;
   signOut(): Promise<void>;
 }
@@ -50,17 +48,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsub;
   }, []);
 
-  async function signIn(email: string, password: string) {
-    const cred = await signInWithEmailAndPassword(auth, email, password);
-    if (cred.user.email) {
-      const status = await loadAdminStatus(cred.user.email);
-      if (!status.isAdmin) {
-        await firebaseSignOut(auth);
-        throw new Error('Нет доступа: не является администратором');
-      }
-    }
-  }
-
   async function signInWithGoogle() {
     const provider = new GoogleAuthProvider();
     const cred = await signInWithPopup(auth, provider);
@@ -80,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, isSuperAdmin, loading, signIn, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, isAdmin, isSuperAdmin, loading, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );
