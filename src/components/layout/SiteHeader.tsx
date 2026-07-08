@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Search, ShieldCheck, LogIn, X } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 
 interface SiteHeaderProps {
   search: string;

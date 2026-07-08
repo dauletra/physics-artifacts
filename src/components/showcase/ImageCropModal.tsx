@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, THUMBNAIL_RATIO } from '../../config/constants';
 
 interface Crop { x: number; y: number; w: number; h: number }
@@ -17,14 +17,10 @@ export function ImageCropModal({ file, onConfirm, onCancel }: Props) {
   const imgRef = useRef<HTMLImageElement>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [crop, setCrop] = useState<Crop>({ x: 0, y: 0, w: 0, h: 0 });
-  const [objectUrl, setObjectUrl] = useState('');
+  const objectUrl = useMemo(() => URL.createObjectURL(file), [file]);
   const dragRef = useRef<DragState | null>(null);
 
-  useEffect(() => {
-    const url = URL.createObjectURL(file);
-    setObjectUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
+  useEffect(() => () => URL.revokeObjectURL(objectUrl), [objectUrl]);
 
   const initCrop = useCallback(() => {
     const img = imgRef.current;

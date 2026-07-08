@@ -8,7 +8,7 @@ import type { ArtifactGroup } from '../types/artifact.types';
 import { getEmbedUrl, getViewUrl } from '../utils/artifactUrl';
 import { Spinner } from '../components/ui/Spinner';
 import { NotFoundPage } from './NotFoundPage';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 
 export function ArtifactDetailPage() {
   const { id } = useParams<{ id: string }>();

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Plus, Trash2, ShieldCheck, Shield, Pencil, Check, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { useAdmins } from '../../hooks/useAdmins';
 import { adminService } from '../../services/adminService';
 import { DeleteConfirmModal } from '../../components/modals/DeleteConfirmModal';

@@ -1,16 +1,17 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useArtifactGroups } from '../hooks/useArtifactGroups';
 import { useSections } from '../hooks/useSections';
 import { useTags } from '../hooks/useTags';
 import { SiteHeader } from '../components/layout/SiteHeader';
+import { GradeSection } from '../components/showcase/GradeSection';
 import { ArtifactCard } from '../components/showcase/ArtifactCard';
 import { FilterBar } from '../components/showcase/FilterBar';
 import { FilterChips } from '../components/showcase/FilterChips';
 import { SkeletonCard } from '../components/ui/SkeletonCard';
 import { ErrorState } from '../components/ui/ErrorState';
 import { EmptyState } from '../components/ui/EmptyState';
-import { INITIAL_PAGE_SIZE, PAGE_SIZE, NEW_ARTIFACT_THRESHOLD_MS } from '../config/constants';
+import { GRADES, NEW_ARTIFACT_THRESHOLD_MS } from '../config/constants';
 
 export function ShowcasePage() {
   const { groups, loading, error, reload } = useArtifactGroups({ publicOnly: true });
@@ -18,58 +19,9 @@ export function ShowcasePage() {
   const { tags } = useTags();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const selectedGrade = Number(searchParams.get('grade')) || null;
-  const selectedQuarter = Number(searchParams.get('quarter')) || null;
-  const selectedSectionId = searchParams.get('section') || null;
   const selectedTagIds = searchParams.get('tags')?.split(',').filter(Boolean) ?? [];
-  const selectedOther = searchParams.get('other') === 'true';
   const selectedAuthor = searchParams.get('author') || null;
   const search = searchParams.get('q') || '';
-
-  const [visibleCount, setVisibleCount] = useState(INITIAL_PAGE_SIZE);
-
-  useEffect(() => {
-    setVisibleCount(INITIAL_PAGE_SIZE);
-  }, [selectedGrade, selectedQuarter, selectedSectionId, selectedTagIds.join(','), selectedOther, selectedAuthor, search]);
-
-  function onGradeChange(grade: number | null) {
-    setSearchParams(prev => {
-      if (grade) prev.set('grade', String(grade)); else prev.delete('grade');
-      prev.delete('quarter');
-      prev.delete('section');
-      prev.delete('other');
-      return prev;
-    });
-  }
-
-  function onOtherChange(val: boolean) {
-    setSearchParams(prev => {
-      if (val) {
-        prev.set('other', 'true');
-        prev.delete('grade');
-        prev.delete('quarter');
-        prev.delete('section');
-      } else {
-        prev.delete('other');
-      }
-      return prev;
-    });
-  }
-
-  function onQuarterChange(quarter: number | null) {
-    setSearchParams(prev => {
-      if (quarter) prev.set('quarter', String(quarter)); else prev.delete('quarter');
-      prev.delete('section');
-      return prev;
-    });
-  }
-
-  function onSectionChange(section: string | null) {
-    setSearchParams(prev => {
-      if (section) prev.set('section', section); else prev.delete('section');
-      return prev;
-    });
-  }
 
   function onTagIdsChange(ids: string[]) {
     setSearchParams(prev => {
@@ -94,30 +46,22 @@ export function ShowcasePage() {
 
   function clearAll() {
     setSearchParams(prev => {
-      ['grade', 'quarter', 'section', 'tags', 'other', 'author', 'q'].forEach(k => prev.delete(k));
+      ['tags', 'author', 'q'].forEach(k => prev.delete(k));
       return prev;
     });
   }
 
-  const now = Date.now();
+  const [now] = useState(() => Date.now());
 
   const filteredGroups = useMemo(() => {
     const q = search.trim().toLowerCase();
     return groups
-      .filter(g => {
-        if (selectedOther) return !g.grade || g.grade.length === 0;
-        return !selectedGrade || g.grade?.includes(selectedGrade);
-      })
-      .filter(g => !selectedQuarter || g.quarter === selectedQuarter)
-      .filter(g => !selectedSectionId || g.sectionId === selectedSectionId)
       .filter(g => selectedTagIds.length === 0 || selectedTagIds.some(id => g.tagIds.includes(id)))
       .filter(g => !selectedAuthor || g.createdBy === selectedAuthor)
       .filter(g => !q || g.title.toLowerCase().includes(q) || g.description?.toLowerCase().includes(q));
-  }, [groups, selectedGrade, selectedQuarter, selectedSectionId, selectedTagIds, selectedOther, selectedAuthor, search]);
+  }, [groups, selectedTagIds, selectedAuthor, search]);
 
-  const visibleGroups = filteredGroups.slice(0, visibleCount);
-  const hasMore = visibleCount < filteredGroups.length;
-  const isFiltered = !!(selectedGrade || selectedQuarter || selectedSectionId || selectedTagIds.length || selectedOther || selectedAuthor || search);
+  const isFiltered = !!(selectedTagIds.length || selectedAuthor || search);
 
   const authorDisplayName = useMemo(() => {
     if (!selectedAuthor) return null;
@@ -125,23 +69,29 @@ export function ShowcasePage() {
     return match?.createdByName || selectedAuthor.split('@')[0];
   }, [groups, selectedAuthor]);
 
+  const gradeSections = useMemo(
+    () => GRADES.map(grade => ({
+      grade,
+      groups: filteredGroups.filter(g => g.grade?.includes(grade)),
+    })),
+    [filteredGroups]
+  );
+
+  const otherGroups = useMemo(
+    () => filteredGroups.filter(g => !g.grade || g.grade.length === 0),
+    [filteredGroups]
+  );
+
+  const hasAnyResults = gradeSections.some(s => s.groups.length > 0) || otherGroups.length > 0;
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <SiteHeader search={search} onSearchChange={onSearchChange} />
 
       <FilterBar
-        sections={sections}
         tags={tags}
-        selectedGrade={selectedGrade}
-        selectedQuarter={selectedQuarter}
-        selectedSectionId={selectedSectionId}
         selectedTagIds={selectedTagIds}
-        selectedOther={selectedOther}
-        onGradeChange={onGradeChange}
-        onQuarterChange={onQuarterChange}
-        onSectionChange={onSectionChange}
         onTagIdsChange={onTagIdsChange}
-        onOtherChange={onOtherChange}
       />
 
       <main className="max-w-7xl mx-auto px-4 py-6">
@@ -164,35 +114,46 @@ export function ShowcasePage() {
         {/* Error */}
         {error && <ErrorState message={`Артефактілерді жүктеу мүмкін болмады: ${error.message}`} onRetry={reload} />}
 
-        {/* Grid */}
         {!error && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {loading
-                ? Array.from({ length: INITIAL_PAGE_SIZE }).map((_, i) => <SkeletonCard key={i} />)
-                : visibleGroups.map(g => (
-                    <ArtifactCard
-                      key={g.id}
-                      group={g}
-                      showNewBadge={now - g.createdAt.toMillis() < NEW_ARTIFACT_THRESHOLD_MS}
-                    />
-                  ))
-              }
-            </div>
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+              </div>
+            ) : (
+              <div className="space-y-10">
+                {gradeSections.map(({ grade, groups: gGroups }) => (
+                  <GradeSection
+                    key={grade}
+                    title={`${grade} сынып`}
+                    grade={grade}
+                    groups={gGroups}
+                    sections={sections}
+                    now={now}
+                    newArtifactThresholdMs={NEW_ARTIFACT_THRESHOLD_MS}
+                  />
+                ))}
 
-            {/* Load more */}
-            {!loading && hasMore && (
-              <div className="flex justify-center mt-8">
-                <button
-                  onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
-                  className="px-6 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Көбірек жүктеу ({filteredGroups.length - visibleCount})
-                </button>
+                {otherGroups.length > 0 && (
+                  <section className="space-y-4">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 pb-2 border-b border-gray-200 dark:border-gray-800">
+                      Басқа
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {otherGroups.map(g => (
+                        <ArtifactCard
+                          key={g.id}
+                          group={g}
+                          showNewBadge={now - g.createdAt.toMillis() < NEW_ARTIFACT_THRESHOLD_MS}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {!hasAnyResults && <EmptyState onClearFilters={clearAll} />}
               </div>
             )}
-
-            {!loading && filteredGroups.length === 0 && <EmptyState onClearFilters={clearAll} />}
           </>
         )}
       </main>

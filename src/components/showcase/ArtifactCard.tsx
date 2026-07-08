@@ -2,7 +2,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Copy, Sparkles, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { ArtifactGroup } from '../../types/artifact.types';
-import { getViewUrl } from '../../utils/artifactUrl';
 
 const GRADIENTS = [
   'from-blue-400 to-indigo-600',
@@ -118,5 +117,3 @@ export function ArtifactCard({ group, showNewBadge }: ArtifactCardProps) {
     </div>
   );
 }
-
-export { getViewUrl };

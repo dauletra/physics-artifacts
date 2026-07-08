@@ -11,22 +11,27 @@ export function useArtifactGroups({ publicOnly = false }: Options = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(null);
+  const fetchData = useCallback(() => {
     const fetch = publicOnly
       ? artifactGroupService.getPublic()
       : artifactGroupService.getAll();
 
-    fetch
-      .then(data =>
-        setGroups(data.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()))
-      )
+    return fetch
+      .then(data => {
+        setGroups(data.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()));
+        setError(null);
+      })
       .catch(err => setError(err instanceof Error ? err : new Error(String(err))))
       .finally(() => setLoading(false));
   }, [publicOnly]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  return { groups, loading, error, reload: load };
+  const reload = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    fetchData();
+  }, [fetchData]);
+
+  return { groups, loading, error, reload };
 }

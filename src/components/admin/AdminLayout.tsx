@@ -1,6 +1,6 @@
 import { NavLink, Outlet, Link } from 'react-router-dom';
 import { LayoutGrid, Layers, Tags, LogOut, ExternalLink, ShieldCheck } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 
 const navItems = [
   { to: '/admin', label: 'Артефактілер', icon: LayoutGrid, end: true, superOnly: false },

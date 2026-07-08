@@ -9,6 +9,9 @@ export function useArtifacts(groupId: string) {
 
   useEffect(() => {
     if (!groupId) return;
+    // Refetch-on-prop-change: groupId can change without remounting this hook,
+    // so loading must be reset here (React's own "fetch when id changes" pattern).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     artifactService
       .getByGroupId(groupId)

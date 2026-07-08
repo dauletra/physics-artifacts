@@ -8,7 +8,7 @@ import { artifactService } from '../../services/artifactService';
 import { storageService } from '../../services/storageService';
 import { useSections } from '../../hooks/useSections';
 import { useTags } from '../../hooks/useTags';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { adminService } from '../../services/adminService';
 import { GRADES, QUARTERS } from '../../config/constants';
 import { normalizeArtifactUrl, isValidArtifactUrl, detectUrlType } from '../../utils/artifactUrl';
